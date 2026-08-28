@@ -1,0 +1,4 @@
+interface:
+  display_name: "PRD Lifecycle Manager"
+  short_description: "Generate, standardize, and track living PRDs"
+  default_prompt: "Use $prd-lifecycle to convert this input into a versioned PRD or update an existing PRD progress."
