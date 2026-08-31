@@ -1,45 +1,60 @@
 ---
 name: prd-lifecycle
-description: Convert loose product notes or incomplete PRDs into professional versioned PRDs, and update living PRD implementation progress, changelogs, blockers, and next-step recommendations. Use when users ask to create, standardize, review, track, or update a PRD; do not use for technical design documents that contain no product requirements.
+description: Convert product notes or incomplete PRDs into readable, traceable, versioned PRDs with mandatory user stories and use cases, or update delivery progress, evidence, blockers, decisions, and release readiness. Do not use for technical design documents that contain no product requirements.
 ---
 
 # PRD Lifecycle
 
-Create and maintain a PRD as a traceable source of truth, not as a one-time rewrite.
+Create and maintain a PRD that is easy for product, design, engineering, QA, and stakeholders to read while remaining a traceable source of truth.
 
 ## Route the request
 
-- For notes, meeting records, chats, or an incomplete PRD that must become a professional PRD, read [references/function-1-normalize.md](references/function-1-normalize.md) and [references/prd-template.md](references/prd-template.md).
-- For progress updates such as “完成了 A、B、C”, status tracking, changelog maintenance, or next-step recommendations, read [references/function-2-track.md](references/function-2-track.md).
-- When the user requests both, normalize first, then apply the progress update to the normalized version.
+- To create, normalize, or substantially review a PRD, read [references/function-1-normalize.md](references/function-1-normalize.md) and [references/prd-template.md](references/prd-template.md).
+- To apply progress, evidence, blocker, owner, or decision updates, read [references/function-2-track.md](references/function-2-track.md).
+- When both apply, normalize first and then update the normalized version.
 
-Read every supplied source file completely before classifying or modifying it.
+Read every supplied source completely before classifying, modifying, or versioning it.
+
+## Required product comprehension
+
+1. Use the readable section order in the canonical template unless the user's established format is clearer.
+2. Include both user stories (`US-*`) and use cases (`UC-*`) in every product PRD. Each P0 requirement must trace to at least one user story or use case and to explicit acceptance criteria.
+3. Keep user stories outcome-focused. Put preconditions, triggers, normal flow, alternatives, errors, permissions, retries, and recovery in use cases and requirement acceptance criteria.
+4. Keep `Non-Goals` strategic and `Out of Scope` release-specific; do not duplicate the same list under both.
 
 ## Shared invariants
 
 1. Preserve evidence boundaries:
-   - `[确认]`: directly supported by the input or supplied evidence.
-   - `[推断]`: reasonably inferred but not confirmed.
-   - `[建议]`: newly proposed by the skill.
-   - `待决策 Q-xxx`: a missing decision that materially changes scope, behavior, data, permission, or acceptance.
-2. Never turn `[推断]`, `[建议]`, or a missing value into a confirmed requirement.
-3. Separate the stable requirement definition from delivery progress. Use only:
-   - Requirement status: `Draft / In Review / Approved / Deferred`.
-   - Delivery status: `Not Started / In Progress / Blocked / Reported Complete / Verified`.
-   - Treat `Accepted` and `Released` as release gates, not normal delivery statuses.
-4. A user saying “完成了” moves an item to `Reported Complete`; move it to `Verified` only when the agreed evidence exists.
-5. Keep product priority separate from security severity. A P2 operations feature can still have a P0 security risk.
-6. Put the current actionable work in one authoritative execution dashboard. Risk, decision, and requirement sections link by ID instead of duplicating the same status text.
-7. Do not propagate passwords, tokens, maintenance keys, secrets, or unnecessary internal addresses from the source into generated PRDs.
-8. Keep product requirements in the PRD. Split substantial API, schema, infrastructure, performance, telemetry, or deployment material into a Technical Spec. Split update/approval mechanics into a workflow document.
+   - `[确认]`: directly supported by supplied input or evidence.
+   - `[推断]`: reasonably inferred but unconfirmed.
+   - `[建议]`: newly proposed.
+   - `待决策 Q-xxx`: a material missing decision.
+2. Never promote `[推断]`, `[建议]`, or a missing value into a confirmed requirement, target, implementation state, or approval.
+3. Separate requirement maturity from delivery progress:
+   - Requirement: `Draft / In Review / Approved / Deferred`.
+   - Delivery: `Not Started / In Progress / Blocked / Reported Complete / Verified`.
+   - `In Review` requires evidence that review has started. `Accepted` and `Released` are release gates.
+4. Record the basis for each delivery status. Observed implementation, owner report, CI evidence, QA verification, and production evidence are not interchangeable.
+5. A completion report moves work to `Reported Complete`; only evidence checked against acceptance criteria moves it to `Verified`.
+6. Use stable individual IDs. Never use a range such as `Q-001–Q-010` as a tracked row.
+7. Keep stable action IDs (`A-*`) separate from their target requirement, risk, or decision ID.
+8. Classify dependencies as `Hard`, `Soft`, or `Gate`; only unresolved `Hard` or `Gate` dependencies automatically block delivery.
+9. Keep product priority separate from security severity.
+10. Do not propagate secrets, credentials, maintenance keys, or unnecessary internal addresses.
+11. Give non-functional requirements stable `NFR-*` IDs when they affect acceptance or release.
+12. Split substantial API, schema, infrastructure, telemetry, deployment, or workflow mechanics into companion specifications.
 
-## Output and versioning
+## Validation and delivery
 
-- If the user has not indicated an output preference, ask once: Markdown, Word, or both. Reuse an established preference and do not ask again.
-- Use filenames such as `<Product>_PRD_v1.2.0.md` or `.docx`.
+- For canonical Markdown, run `scripts/prd_validate.py --strict` before delivery. Correct errors rather than bypassing validation.
+- For progress updates, prefer `scripts/prd_progress.py`; supply the expected document version or SHA when concurrent edits are possible, then validate the output.
+- Deliver the versioned PRD, classification and change summary, unresolved decisions, validation result, and every linked companion document.
+
+## Versioning
+
 - Major: product goal, core scope, or role model changes.
-- Minor: requirements, priority, business rules, or acceptance criteria materially change.
-- Patch: progress, owner, evidence, dates, or non-substantive text changes.
-- If the input and normalized source are unchanged, do not create a fake version bump.
+- Minor: requirements, priority, business rules, dependencies, user stories/use cases, or acceptance criteria materially change.
+- Patch: progress, owner, evidence, dates, or non-substantive wording changes.
+- Do not create a version when there is no effective change. Do not reuse or decrease a version number.
 
-Deliver the new artifact plus a concise summary of classification, changes, unresolved decisions, and any companion documents. Use the environment's durable artifact workflow when files must be delivered.
+If the user has no established output preference, ask once whether they want Markdown, Word, or both. Reuse that preference later.

@@ -1,79 +1,70 @@
-# Function 2: PRD Progress Tracking and Update
+# Function 2: Track PRD Delivery and Decisions
 
-## Required progress structure
+## Canonical tracking structure
 
-The PRD must contain two separately readable tables: functional requirements and technical requirements. Use the canonical markers and columns in [prd-template.md](prd-template.md).
-
-Required columns:
+Use the marker-managed tables in [prd-template.md](prd-template.md). The canonical progress columns are:
 
 | Column | Rule |
 |---|---|
-| ID | Stable unique requirement ID; preferred update key |
+| ID | Stable `FR-*` or `TR-*` ID |
 | 需求项 | Human-readable title |
 | 优先级 | P0 / P1 / P2 |
-| 状态 | One of the five delivery statuses |
-| 负责人 | Named person or role; use `—` when unknown |
+| 交付状态 | One of the five delivery statuses |
+| 状态依据 | Observation, owner report, PR/commit, CI, QA, security review, or production evidence |
+| 负责人 | Named person or role; `—` when unknown |
 | 完成日期 | Fill on `Reported Complete` or `Verified` |
-| 依赖 | Requirement/decision IDs or a concise external dependency |
-| 备注/证据 | PR, commit, test, design, decision, or explanation |
+| 依赖 | Individual requirement, `Q-*`, `R-*`, or concise external dependency |
+| 备注/证据 | Evidence or explanation |
+
+The helper remains compatible with legacy tables using `状态` and no `状态依据`, but new documents use the canonical columns.
 
 ## Parse a conversational update
 
-For input such as “我完成了 A、B、C 三项”:
+For input such as “我完成了 A、B、C”:
 
-1. Load the current authoritative PRD.
-2. Match each item by exact ID first, then by a unique exact/near-exact title.
-3. If a match is ambiguous, ask for that item only; continue with unambiguous items. The helper accepts an ID or a unique title match.
-4. Set the status to `Reported Complete`, fill completion date, and fill owner from the actor when the owner is blank.
-5. Use `Verified` only after comparing the supplied evidence with that requirement's acceptance criteria. The helper requires both evidence and `verification_confirmed: true`; that flag means the caller performed this comparison, not merely that a PR or CI link exists.
-6. Append one changelog entry containing version, actor, time, affected IDs, old/new states, and evidence. Never overwrite history.
-7. Bump Patch for progress-only changes. Use Minor when the update changes requirement meaning, priority, business rules, dependencies, or acceptance criteria.
+1. Load the authoritative PRD and, when concurrency is possible, record its version or SHA.
+2. Match exact ID first and then a unique exact/near-exact title. Ask only about ambiguous items and continue with unambiguous items.
+3. Move a user-reported completion to `Reported Complete`, fill the date and actor when appropriate, and state `Owner report` as the basis.
+4. Move to `Verified` only after evidence has been compared with the mapped acceptance criteria. A PR or passing CI alone is not automatically product verification.
+5. Update dependencies only with individual IDs. A `Resolved` decision or risk requires evidence.
+6. Preserve stable `A-*` action IDs while separately updating their target IDs.
+7. Append one changelog row; never overwrite history.
+8. Refuse no-op updates and version reuse/regression.
+9. Use Minor for priority, dependency, requirement, use-case, or acceptance changes; use Patch for progress-only changes.
 
-The deterministic helper [scripts/prd_progress.py](../scripts/prd_progress.py) can update canonical Markdown tables, version metadata, next-step recommendations, and changelog. Use it when the PRD follows the template. Otherwise normalize the PRD first.
+Prefer [scripts/prd_progress.py](../scripts/prd_progress.py). Use `--bump auto`; provide `--expected-version` or `--expected-sha256` when another actor may edit the source. Validate the output with [scripts/prd_validate.py](../scripts/prd_validate.py).
 
 ## Dependencies and blockers
 
-- A requirement is blocked when its status is `Blocked`, its dependency cell names an unresolved Q/R/requirement ID, or it contains an unresolved external dependency such as “法务确认”.
-- A requirement dependency is resolved only when it is `Verified`. A Q/R dependency is resolved only when the dependency register says `Resolved`.
-- Normalize important external dependencies such as legal approval into a Q/R entry whenever possible.
-- Do not recommend blocked work as “start now”. Recommend resolving the dependency itself, with owner, date, and expected evidence.
+- `Hard`: work cannot proceed until resolved.
+- `Gate`: implementation may proceed, but the item cannot pass the named approval or release gate.
+- `Soft`: relevant dependency that does not automatically change delivery to `Blocked`.
+- Requirement dependencies resolve at `Verified`; decision/risk dependencies resolve at `Resolved`.
+- A requirement explicitly marked `Blocked` without a dependency must produce an action to clarify the blocker.
 
-## Next-step recommendation order
+## Next-step ranking
 
-Generate recommendations from unfinished, unblocked work in this order:
+Rank unfinished work by:
 
-1. P0 before P1 before P2.
-2. Within the same priority: `Reported Complete` needing verification, then `In Progress`, then `Not Started`.
-3. Prefer items that unblock more downstream work.
-4. Preserve stable document order as the final tie-breaker.
+1. P0, then P1, then P2.
+2. `Reported Complete`, then `In Progress`, then `Not Started`.
+3. Dependencies that unblock the most downstream items.
+4. Stable document order.
 
-Recommended action by status:
+Aggregate all downstream requirements when recommending a decision or risk. Do not present one arbitrary dependent as if it were the only reason.
 
-- `Reported Complete`: verify the item using its required evidence.
-- `In Progress`: continue the current item to its next explicit checkpoint.
-- `Not Started`: start the item only when all dependencies are resolved.
-- `Blocked`: recommend the dependency or decision, not the blocked item.
-- `Verified`: do not recommend as implementation work.
-
-Each recommendation includes ID, action, reason, suggested owner/role, target date, and expected evidence. The marker-managed recommendation table at the top is the authoritative “本周期可以直接开工” list; do not maintain a second action list.
+Each action has a stable `A-*` ID plus a target ID, action, reason, owner, date, and evidence. The marker-managed snapshot is authoritative; do not maintain a second current-action list.
 
 ## Permission and history
 
-- Contributors may report progress, evidence, and blockers.
-- Requirement owners may update delivery status for their items.
-- Product owners approve requirement meaning, priority, scope, and product acceptance.
-- QA/security reviewers verify items against agreed evidence.
-- If the actor lacks authority for a requested change, record it as a proposed change rather than mutating the authoritative requirement.
+- Contributors report progress, evidence, and blockers.
+- Requirement owners update delivery state.
+- Product owners approve meaning, priority, scope, user stories/use cases, and product acceptance.
+- QA/security reviewers verify against agreed acceptance evidence.
+- Unauthorized changes are recorded as proposals, not authoritative mutations.
 
-Never hide conflicting simultaneous updates. If the current version changed since it was loaded, stop and reconcile against the latest version before writing.
+If the loaded source version or SHA no longer matches, stop and reconcile before writing.
 
-## User-facing update summary
+## User-facing summary
 
-Return:
-
-- Old and new PRD versions
-- Updated IDs and state transitions
-- Any updates not applied and why
-- New or cleared blockers
-- Updated actionable-now list
-- Ranked next steps with reasons
+Return old/new versions, effective transitions, unapplied changes with reasons, new or cleared blockers, current actions, ranked next steps, and validation status.

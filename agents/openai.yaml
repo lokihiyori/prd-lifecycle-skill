@@ -1,4 +1,4 @@
 interface:
   display_name: "PRD Lifecycle Manager"
-  short_description: "Generate, standardize, and track living PRDs"
-  default_prompt: "Use $prd-lifecycle to convert this input into a versioned PRD or update an existing PRD progress."
+  short_description: "Readable PRDs with stories, use cases, and tracking"
+  default_prompt: "Use $prd-lifecycle to create or update a readable, versioned PRD with user stories, use cases, acceptance criteria, and traceable delivery status."

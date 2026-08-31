@@ -1,76 +1,83 @@
-# Function 1: Input File to Professional PRD
+# Function 1: Normalize Input into a Readable Living PRD
 
 ## Classify the input
 
-Choose exactly one primary mode after reading the complete source.
+Choose one primary mode after reading the complete source.
 
-| Input type | Signals | Required treatment |
+| Input type | Signals | Treatment |
 |---|---|---|
-| Unstructured material | Loose notes, meeting minutes, chat retelling, fragmented bullets, no recognizable document structure | Extract problem, users, goals, features, constraints, decisions, risks, and evidence. Build a complete first draft from the standard template. Mark every inferred or newly proposed element `[推断]` or `[建议]`. |
-| Partial PRD | Existing headings or requirement-like structure, but missing scope, priorities, acceptance criteria, permissions, failure paths, metrics, or delivery tracking | Perform a gap analysis against the template, fill the gaps in a new version, and provide a brief “what changed” summary. Preserve source claims and mark additions by evidence class. |
+| Unstructured material | Notes, meeting records, chats, fragmented bullets | Extract problems, users, evidence, goals, constraints, decisions, risks, and candidate behavior. Build a first draft and mark every addition by evidence class. |
+| Partial PRD | Existing requirements or headings, but missing stories, use cases, scope, permissions, failures, acceptance, metrics, or tracking | Preserve source meaning, perform a template gap analysis, and create a new version with a concise change summary. |
 
-If both appear, classify by the dominant content. Ask one focused question only when the classification would materially change the output.
+Ask a focused question only when the answer would materially change scope or output. Otherwise create explicit `Q-*` decisions.
 
-## Normalize the source
+## Normalize in reader order
 
-1. Extract directly supported facts and retain their meaning.
-2. Detect contradictions before choosing a solution. Assign `C-xxx`; do not silently pick one side.
-3. Convert blocking unknowns into `Q-xxx` decisions with affected requirements, decision-owner role, due date, and status.
-4. Restore a single glossary. Link disputed terms to their Q IDs.
-5. Generate stable IDs:
-   - `P-xxx` problems
-   - `FR-<DOMAIN>-xxx` functional requirements
-   - `TR-<DOMAIN>-xxx` technical requirements
-   - `NFR-<DOMAIN>-xxx` non-functional requirements
-   - `AC-<DOMAIN>-xxx` acceptance criteria
-   - `R-<DOMAIN>-xxx` risks
-   - `Q-xxx` decisions
-   - `A-xxx` current-cycle actions
-6. Separate roles from visibility scopes.
-7. For each P0 requirement, add normal, error, permission, duplicate/retry, and recovery acceptance criteria when applicable.
-8. Add a current-cycle execution dashboard containing work that does not depend on unresolved decisions.
-9. Add concrete dates for the decisions blocking the most downstream work. If the company cadence is unknown, use “before the next review” and require a next-review date.
-10. Add functional and technical implementation-progress tables using the canonical markers from the template.
+Use [prd-template.md](prd-template.md) as the default order:
 
-## Gap analysis checklist
+1. Start with document control, an executive summary, background, and a WHO/WHAT/WHEN/WHY/EVIDENCE problem statement.
+2. Separate goals, strategic non-goals, metrics, target users, roles, permissions, and release-specific out-of-scope items.
+3. Add user stories and use cases before detailed requirements so readers understand user value and behavior first.
+4. Add the core journey, functional requirements, AI behavior, edge cases, UX, NFRs, analytics, dependencies, rollout, release gates, questions, decisions, traceability, progress, and history.
+5. Keep the top action snapshot short. Put complete functional and technical progress tables in the appendix.
 
-Check for:
+## Evidence and status rules
 
-- Document owner, version, target release, review date, and source of truth
-- Problem evidence, goals, non-goals, and current scope
-- Users, roles, visibility, permissions, and data ownership
-- Core journey and failure/recovery paths
-- Stable requirement IDs, priority, owner, status, and dependencies
-- Measurable acceptance criteria for P0 items
-- Security, privacy, accessibility, reliability, and data lifecycle
-- AI allowed/prohibited behavior and traceability when AI is involved
-- Success metrics with definitions; never invent baselines or targets
-- Risks, contradictions, decisions, milestone dates, and release gates
-- Glossary and source mapping
+- `[确认]` means input-backed, not objectively true or implemented. State this in the document legend.
+- Default newly normalized requirement maturity to `Draft`. Use `In Review` only when supplied evidence shows that review has begun.
+- Do not infer active work merely from a visible page or endpoint. When implementation evidence exists but delivery is not verified, record the conservative delivery state and state basis explicitly, such as `Observed implementation; acceptance unverified`.
+- Do not invent baselines, dates, owners, or numeric targets. A proposed target may appear only as `[建议]` and must remain unapproved until a named decision closes it.
 
-## Control uncertainty density
+## Mandatory user stories and use cases
 
-- Do not scatter dozens of anonymous `TBD` markers.
-- Use Q IDs only for material decisions; group them in one table.
-- Put executable, decision-independent work at the top so readers know what can start now.
-- Use `[建议]` for reasonable improvements that do not claim approval.
-- Do not create arbitrary dates for commitments. Label proposed planning dates and identify who must confirm them.
+Generate stable IDs:
+
+- `US-<DOMAIN>-xxx` for user stories.
+- `UC-<DOMAIN>-xxx` for use cases.
+
+Every PRD must contain both. For each core flow and every P0 requirement:
+
+1. Link at least one `US-*` or `UC-*`.
+2. Write the user story as: `As a <role>, I want <capability>, so that <outcome>.`
+3. Define a use case with actor, preconditions, trigger, main flow, alternate/error flows, permissions, result, and mapped `FR-*` / `AC-*` IDs.
+4. Do not invent persona demographics, motivation, or research evidence. Use a role label and mark inferred needs.
+5. Reuse one story or use case across requirements when it genuinely represents the same user outcome; do not create artificial one-to-one duplication.
+
+## Requirements and traceability
+
+Generate stable individual IDs:
+
+- `P-*`, `G-*`, `NG-*`, `US-*`, `UC-*`, `FR-*`, `TR-*`, `NFR-*`, `AC-*`, `EC-*`, `EV-*`, `R-*`, `C-*`, `Q-*`, `D-*`, and `A-*`.
+- Do not create aggregate tracked rows such as `Q-001–Q-012`.
+- Separate roles from visibility and data ownership.
+- For each P0 requirement, cover normal, validation/error, permission, duplicate/retry, and recovery behavior when applicable.
+- Add a traceability row connecting each P0 requirement to a story/use case, acceptance criteria, analytics, and dependencies.
+
+## Dependency and uncertainty control
+
+- Detect contradictions before selecting a solution. Assign `C-*` and link them to decisions.
+- Convert material unknowns into individual `Q-*` rows with affected IDs, decision owner role, due date, and status.
+- Mark dependencies `Hard`, `Soft`, or `Gate`. Only `Hard` and `Gate` should force `Blocked`.
+- Keep executable, decision-independent work in the action snapshot.
+- Give the most consequential blockers concrete dates. If cadence is unknown, require a next-review date rather than inventing one.
+
+## NFR, AI, metrics, and analytics
+
+- Add stable NFRs for applicable performance, security, privacy, accessibility, reliability, observability, and data-lifecycle requirements.
+- For AI products, define allowed behavior, grounding, evidence, uncertainty, fallback, hallucination handling, prompt injection, safety, evaluation, and human review.
+- Define metric formulas and event mappings. Leave unknown baselines and targets as `待测` / `待决策`.
+- Treat zero-tolerance security or privacy targets as proposed until approved unless the input already establishes them.
 
 ## Split large outputs
 
-Create a companion Technical Spec when the source contains substantial API, database, task state, performance, telemetry, security implementation, or operations detail, or when the core PRD would become difficult to scan at roughly 500 lines or more.
+Create a companion Technical Spec when implementation detail is substantial or the PRD becomes difficult to scan. Create a separate Delivery Tracker when progress tables dominate the product narrative. Keep linked files in the delivered bundle and validate the links.
 
-Keep the PRD focused on product outcomes, business rules, scope, priority, acceptance, risk, and high-level progress. Preserve cross-references between split files.
-
-## Format and deliver
-
-If no preference is known, ask the user to choose Markdown, Word, or both. When Word is requested, use an available document-generation workflow and visually verify the result. When Markdown is requested, validate headings, tables, code fences, cross-references, filenames, and version metadata.
-
-Output:
+## Required output
 
 1. Versioned PRD.
-2. Concise conversion summary including classification and major changes.
-3. Source mapping identifying confirmed, inferred, and suggested material.
-4. Technical Spec only when the split rule applies.
+2. Concise classification and conversion summary.
+3. Source mapping for confirmed, inferred, and suggested material.
+4. Companion specifications when the split rule applies.
+5. Strict validator result.
 
-Before creating a new version, compare the new source with the source already used for the latest normalized version when available. Identical input with no rule/template change must reuse the current version.
+Before versioning, compare the input and rules with the latest normalized source. Reuse the current version when nothing effectively changed.
